@@ -16,7 +16,19 @@ setRevenueProvider(new WebSearchRevenueProvider());
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
+app.use(cors({
+  origin: (origin, callback) => {
+    const allowed = [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:5173',
+      /\.bridge\.claudeusercontent\.com$/,
+    ];
+    if (!origin) return callback(null, true); // allow non-browser requests
+    const ok = allowed.some(a => typeof a === 'string' ? a === origin : a.test(origin));
+    callback(ok ? null : new Error('CORS not allowed'), ok);
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // Health check
