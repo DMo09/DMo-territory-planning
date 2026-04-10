@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model TerritoryPlan {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  aeName  String
+  aeType  String @default("commercial")
+  rsdName String @default("")
+  rvpName String @default("")
+  svpName String @default("")
+  status  String @default("draft")
+
+  accounts           Account[]
+  prioritySelections PrioritySelection[]
+  playSelections     PlaySelection[]
+
+  @@map("territory_plans")
+}
+
+model Account {
+  id              String @id @default(cuid())
+  territoryPlanId String
+
+  accountName         String
+  accountOwner        String  @default("")
+  companySize         String  @default("")
+  customerSegment     String  @default("")
+  billingState        String  @default("")
+  industry            String  @default("")
+  territory           String  @default("")
+  userRegion          String  @default("")
+  arr                 Float   @default(0)
+  arrCurrency         String  @default("USD")
+  pipelineArr         Float   @default(0)
+  pipelineArrCurrency String  @default("USD")
+
+  annualRevenue           Float?
+  annualRevenueSource     String?
+  annualRevenueConfidence Float?
+  aiSignal                Boolean?
+  aiSignalSummary         String?
+  aiSignalStatus          String   @default("pending")
+  aiSignalSearchedAt      DateTime?
+
+  tier               Int?
+  normalizedIndustry String  @default("")
+
+  territoryPlan      TerritoryPlan       @relation(fields: [territoryPlanId], references: [id], onDelete: Cascade)
+  prioritySelections PrioritySelection[]
+
+  @@map("accounts")
+}
+
+model PrioritySelection {
+  id              String @id @default(cuid())
+  territoryPlanId String
+  accountId       String
+  bucket          String
+  notes           String @default("")
+
+  territoryPlan TerritoryPlan @relation(fields: [territoryPlanId], references: [id], onDelete: Cascade)
+  account       Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([territoryPlanId, accountId, bucket])
+  @@map("priority_selections")
+}
+
+model PlaySelection {
+  id              String @id @default(cuid())
+  territoryPlanId String
+  playId          String
+  notes           String @default("")
+
+  territoryPlan TerritoryPlan @relation(fields: [territoryPlanId], references: [id], onDelete: Cascade)
+  play          Play          @relation(fields: [playId], references: [id])
+
+  @@unique([territoryPlanId, playId])
+  @@map("play_selections")
+}
+
+model Play {
+  id                    String   @id @default(cuid())
+  name                  String
+  description           String
+  recommendedIndustries String[]
+  recommendedTiers      Int[]
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+
+  playSelections PlaySelection[]
+
+  @@map("plays")
+}
+
+model IndustryConfig {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  isTarget Boolean @default(true)
+
+  @@map("industry_configs")
+}
